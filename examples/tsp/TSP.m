@@ -1,5 +1,5 @@
 function distance = TSP(route, n, DM)
-%TSP Continuous-key objective for the travelling salesman problem.
+%TSP Continuous-key objective for the traveling salesman problem.
 
     [~, order] = sort(route(:));
     order = order(1:n);

@@ -1,4 +1,4 @@
-% Travelling salesman example using continuous random keys.
+% Traveling salesman example using continuous random keys.
 
 root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
 addpath(fullfile(root, 'src'));

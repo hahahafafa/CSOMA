@@ -1,13 +1,17 @@
 # Manifest
 
-This file lists the files intended for the JSS code supplement.
+This file lists the files intended for the CSOMA MATLAB package and software
+paper supplement.
 
 ## Package Files
 
 - `README.md`: package overview and quick-start instructions.
-- `LICENSE`: MIT license text.
-- `MANIFEST.md`: this manifest.
+- `CONTRIBUTING.md`: contributor and issue-reporting guide.
 - `csoma_setup.m`: root-level MATLAB path setup helper.
+- `LICENSE`: MIT license text.
+- `LICENSE.txt`: duplicate MIT license file for submission systems that expect
+  a `.txt` license filename.
+- `MANIFEST.md`: this manifest.
 
 ## Source
 
@@ -48,7 +52,20 @@ This file lists the files intended for the JSS code supplement.
 
 - `replication/run_all.m`: reviewer-facing fast replication entry point.
 
+## Tests
+
+- `tests/run_tests.m`: lightweight setup and optimizer smoke test.
+
 ## Documentation
 
+- `FILE_EXCHANGE_SUBMISSION.md`
+- `docs/developer.md`
+- `docs/MATLAB_FILE_EXCHANGE_SUBMISSION.md`
 - `docs/original_github_README.md`
 - `docs/manuscript_code_fragments/*.m`
+
+## Project Templates
+
+- `.github/ISSUE_TEMPLATE/bug_report.md`
+- `.github/ISSUE_TEMPLATE/feature_request.md`
+- `.github/ISSUE_TEMPLATE/reproducibility_report.md`

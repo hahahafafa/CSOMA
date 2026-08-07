@@ -1,242 +1,159 @@
 # CSOMA MATLAB Package
 
-<p align="center">
-  <strong>MATLAB package for competitive swarm optimization with mutated agents, derivative-free optimization, and optimal design applications.</strong>
-</p>
+This directory contains a MATLAB code package prepared for the accompanying
+software paper and MATLAB File Exchange release of the competitive swarm
+optimizer with mutated agents (CSO-MA).
 
-<p align="center">
-  <a href="#quickstart">Quickstart</a> |
-  <a href="#what-it-does">What it does</a> |
-  <a href="#application-highlights">Application highlights</a> |
-  <a href="#examples">Examples</a> |
-  <a href="#api-map">API map</a> |
-  <a href="#background">Background</a>
-</p>
+## Contents
 
-<p align="center">
-  <img src="https://img.shields.io/badge/MATLAB-Runnable%20Package-0076A8" alt="MATLAB runnable package">
-  <img src="https://img.shields.io/badge/Optimizer-CSO--MA-E67E22" alt="CSO-MA optimizer">
-  <img src="https://img.shields.io/badge/License-MIT-1F8A70" alt="MIT license">
-  <img src="https://img.shields.io/badge/Status-MATLAB%20Package-5B5F97" alt="MATLAB package">
-</p>
+- `src/csoma.m`: core CSO-MA optimizer.
+- `src/csoma_addpaths.m`: helper to add package paths in MATLAB.
+- `csoma_setup.m`: root-level setup helper for users and automated checks.
+- `tests/run_tests.m`: lightweight setup and optimizer smoke test.
+- `examples/basic`: a small smoke test.
+- `examples/logistic_design`: two-factor logistic D-optimal design example.
+- `examples/copula_design`: Gaussian copula D-optimal design and maximum
+  pseudo-likelihood examples.
+- `examples/wasserstein_regression`: Wasserstein regression estimation for
+  distribution-valued responses.
+- `examples/riemannian_design`: D-optimal design on the sphere as a simple
+  Riemannian-manifold example.
+- `examples/tsp`: traveling salesman example.
+- `examples/high_dim_d_optimal`: high-dimensional D-optimal design code from
+  the reference repository.
+- `examples/bayesian_hiv`: Bayesian HIV design code from the reference
+  repository, with a cleaned runnable driver.
+- `examples/fractional_polynomial`: fractional polynomial design code from the
+  reference repository.
+- `replication/run_all.m`: fast replication entry point for reviewers.
+- `docs/original_github_README.md`: README from the reference GitHub repository.
+- `docs/manuscript_code_fragments`: code fragments extracted from the manuscript
+  draft.
+- `docs/developer.md`: maintainer notes for checks, releases, and examples.
 
----
+## Quick Start
 
-## Overview
+From MATLAB, run:
 
-CSOMA is a MATLAB package built around `csoma`, an implementation of the competitive swarm optimizer with mutated agents (CSO-MA). It is designed for derivative-free optimization over box constraints and includes runnable applications in optimal design, dependence modeling, Wasserstein regression, Riemannian optimization, and combinatorial search.
+```matlab
+cd CSOMA_MATLAB_FileExchange
+csoma_setup
+run(fullfile('tests', 'run_tests.m'))
+run('replication/run_all.m')
+```
 
-It provides:
+The smoke test checks path setup, input validation, bounded output, monotone
+best-so-far history, and deterministic behavior under a fixed seed. The fast
+replication script runs lightweight examples for the optimizer, logistic design,
+Gaussian copula design and MLE, Wasserstein regression, Riemannian sphere
+design, and TSP formulation. Heavier Monte Carlo examples are provided under
+`examples/` and should be run separately.
 
-- a box-constrained swarm optimizer with a simple row-vector objective interface;
-- a fast package-level smoke-test script;
-- runnable examples spanning logistic design, Gaussian copula design and pseudo-likelihood estimation, Wasserstein regression, Riemannian design, and travelling salesman optimization;
-- heavier reference examples for Bayesian HIV design, high-dimensional D-optimal design, and fractional polynomial design;
-- supporting documentation, example materials, and packaging notes.
+## Core Usage
 
-At the core, `csoma` minimizes a scalar objective function over lower and upper box constraints using pairwise competition, swarm-center attraction, and a mutation step that helps the search escape stagnation.
+```matlab
+obj_fun = @(x)sum(x.^2);
+lb = -ones(1, 5);
+ub = ones(1, 5);
+opts = struct('Seed', 2026, 'Display', false);
+[best_value, best_x, history] = csoma(obj_fun, lb, ub, 32, 0.1, 100, opts);
+```
 
-## What It Does
+`csoma` minimizes a scalar objective function over box constraints. The objective
+function should accept one row vector and return one scalar value.
 
-| Layer | Main files | Purpose |
+## When To Use CSOMA
+
+CSOMA is a good fit when the objective function is a black box, gradients are
+unavailable or unreliable, the feasible region can be expressed as finite box
+bounds, and a stochastic global-search heuristic is acceptable. The examples
+focus on optimal experimental design and related statistical optimization tasks,
+but the core optimizer only requires a scalar objective and lower/upper bounds.
+
+CSOMA is not the first choice for smooth convex problems where specialized
+deterministic solvers, exact gradients, or convex optimization software are
+available.
+
+## Compatibility
+
+The core optimizer uses base MATLAB functions only. It is written as ordinary
+MATLAB `.m` files and does not require compiled extensions, external data files,
+or a parallel computing setup. The package is intended for current supported
+MATLAB releases. GNU Octave compatibility has not been verified.
+
+Objectives are called with one row vector at a time. Bounds must be finite row
+vectors of equal length, and the objective should return a finite scalar for
+valid inputs or handle invalid model states by returning a finite penalty.
+
+## Dependency Matrix
+
+| Component | Required products | Notes |
 | --- | --- | --- |
-| Core optimizer | [`src/csoma.m`](src/csoma.m) | Minimize a scalar objective over box constraints using the CSO-MA update rule with optional seeded reproducibility and iteration history. |
-| Setup helper | [`csoma_setup.m`](csoma_setup.m) | Add the package source, examples, and replication directories to the MATLAB path from the repository root. |
-| Path helper | [`src/csoma_addpaths.m`](src/csoma_addpaths.m) | Add the package source and example directories to the MATLAB path after `src/` is available. |
-| Fast replication | [`replication/run_all.m`](replication/run_all.m) | Run the lightweight end-to-end example suite intended for quick package verification. |
-| Design examples | [`examples/logistic_design/`](examples/logistic_design), [`examples/copula_design/`](examples/copula_design), [`examples/riemannian_design/`](examples/riemannian_design) | Show how CSOMA can optimize approximate designs in Euclidean and manifold settings. |
-| Statistical estimation examples | [`examples/wasserstein_regression/`](examples/wasserstein_regression), [`examples/bayesian_hiv/`](examples/bayesian_hiv) | Use CSOMA as a derivative-free optimizer inside estimation and Bayesian design objectives. |
-| Combinatorial example | [`examples/tsp/`](examples/tsp) | Solve a travelling salesman instance through a continuous random-key encoding. |
+| `src/csoma.m` | MATLAB | Core optimizer; no toolbox dependencies. |
+| `csoma_setup.m`, `tests/run_tests.m` | MATLAB | Smoke checks for setup, validation, and seeded reproducibility. |
+| `examples/basic` | MATLAB | Minimal optimizer example. |
+| `replication/run_all.m` fast examples | MATLAB | Runs the lightweight design, copula, Wasserstein, Riemannian, and TSP examples. |
+| `examples/bayesian_hiv` | MATLAB; Statistics and Machine Learning Toolbox | Uses `mvnrnd`, `wishrnd`, `gamrnd`, and `normrnd`. |
+| `examples/fractional_polynomial/hw3.m` | MATLAB; Global Optimization Toolbox for comparison blocks | Uses `particleswarm` in comparison code. The local `cso.m` examples do not require this toolbox. |
+| Documentation and issue templates | None | Markdown files only. |
 
-## Application Highlights
+## Reproducibility And Seeds
 
-The package can be used as a general-purpose box-constrained optimizer, and the bundled examples show how the same interface extends naturally to statistical computing and experimental design tasks.
+`csoma` accepts an optional `opts.Seed` field. When supplied, the optimizer calls
+`rng(opts.Seed)` before initializing the swarm. Examples that simulate data set
+their data-generation seed explicitly and pass a separate optimizer seed where
+needed. Running the same package version with the same seed should reproduce the
+same optimizer trajectory within the same MATLAB random-number implementation;
+small numerical differences can still occur across MATLAB releases or platforms.
 
-The logistic-design example includes a sensitivity-function diagnostic that helps assess the resulting approximate design:
-
-<p align="center">
-  <img src="assets/figure1.png" alt="Sensitivity function of design" width="760" />
-</p>
-
-<p align="center">
-  <em>Figure 1: The sensitivity function of design.</em>
-</p>
-
-The copula examples illustrate both optimization and dependence modeling use cases, from Gaussian copula design through pseudo-likelihood estimation and higher-dimensional structured dependence:
-
-<p align="center">
-  <img src="assets/figure2.png" alt="Illustrative copula dependence structures" width="980" />
-</p>
-
-<p align="center">
-  <em>Figure 2: Illustrative copula dependence structures. The left and middle panels show contour plots of Gaussian and Clayton copula densities on the unit square. The right panel sketches a four-variable C-vine in which high-dimensional dependence is built from pair-copula components.</em>
-</p>
-
-## Installation
-
-After downloading or cloning the repository, open MATLAB in the repository root and run:
+For reviewer runs, start with:
 
 ```matlab
 csoma_setup
-```
-
-Then confirm the core optimizer is visible:
-
-```matlab
-which csoma
-```
-
-## Quickstart
-
-Recommended environment: MATLAB with base functionality. Some advanced examples additionally use Statistics and Machine Learning Toolbox routines such as `mvnrnd`, `wishrnd`, `gamrnd`, and `normrnd`.
-
-From MATLAB, move to the repository root and run:
-
-```matlab
-cd('path/to/CSOMA')
-csoma_setup
+run(fullfile('tests', 'run_tests.m'))
 run(fullfile('replication', 'run_all.m'))
 ```
 
-The fast replication script runs:
+Record the MATLAB release, operating system, toolbox availability, and any
+changed seeds when reporting reproducibility results.
 
-1. the basic smoke test;
-2. the logistic D-optimal design example;
-3. the Gaussian copula design example;
-4. the Gaussian copula maximum pseudo-likelihood example;
-5. the Wasserstein regression example;
-6. the Riemannian sphere design example;
-7. the travelling salesman example.
+## Benchmarks
 
-The heavier examples under `examples/high_dim_d_optimal`, `examples/bayesian_hiv`, and `examples/fractional_polynomial` should be run separately.
+`tests/run_tests.m` is the fastest health check and should complete quickly on a
+standard laptop. `replication/run_all.m` is the reviewer-facing benchmark suite;
+it intentionally uses reduced swarm sizes and iteration counts compared with
+large simulation studies so that package functionality can be checked without a
+long Monte Carlo run.
 
-## Minimal API Example
+The Bayesian HIV, high-dimensional D-optimal, and fractional-polynomial examples
+are heavier demonstration scripts. Run them separately when full example
+coverage is needed, and report wall-clock time together with MATLAB release,
+CPU, operating system, seed values, swarm size, and iteration count.
 
-```matlab
-obj_fun = @(x) sum((x - [0.25, -0.50, 0.75]).^2);
-lb = -ones(1, 3);
-ub = ones(1, 3);
-swarmsize = 24;
-phi = 0.10;
-maxiter = 80;
-opts = struct('Seed', 1, 'Display', false);
+## Limitations
 
-[best_value, best_x, history] = csoma(obj_fun, lb, ub, swarmsize, phi, maxiter, opts);
+CSOMA is stochastic and does not provide a proof of global optimality for a
+single finite run. Performance depends on the objective scaling, dimension,
+bounds, swarm size, iteration count, seed, and stopping budget. The implementation
+handles finite box constraints directly; equality constraints, nonlinear
+constraints, integer variables, and multiobjective criteria must be encoded by
+the user, usually through penalties or problem-specific parameterizations.
 
-fprintf('Best value: %.8g\n', best_value);
-fprintf('Best x: [%s]\n', num2str(best_x, ' %.4f'));
-fprintf('Initial best: %.8g, final best: %.8g\n', history(1), history(end));
-```
+The package evaluates objectives serially and does not include automatic
+parallelization. Examples are intended to be transparent reference scripts for
+the software paper, not exhaustive performance claims for every problem class.
 
-`csoma` expects:
+## Contributing
 
-- `obj_fun`: a function handle that accepts one row vector and returns one scalar objective value;
-- `lb`, `ub`: row vectors of lower and upper bounds;
-- `swarmsize`, `phi`, `maxiter`: optimizer controls;
-- `opts`: optional settings such as `Seed` and `Display`.
+Please see `CONTRIBUTING.md` for issue-reporting, testing, and pull-request
+guidelines. Maintainer-oriented notes are in `docs/developer.md`.
 
-## Examples
+## License
 
-| Command | Output |
-| --- | --- |
-| `run('examples/basic/run_basic.m')` | Verifies package setup with a small quadratic smoke test and prints the best solution found. |
-| `run('examples/logistic_design/run_logistic_design.m')` | Computes a locally D-optimal approximate design for a two-factor logistic model and reports the design matrix and sensitivity. |
-| `run('examples/copula_design/run_copula_design.m')` | Optimizes a Gaussian copula design and prints support points with normalized weights. |
-| `run('examples/copula_design/run_copula_mle.m')` | Estimates the Gaussian copula dependence parameter by minimizing a pseudo-likelihood objective. |
-| `run('examples/wasserstein_regression/run_wasserstein_regression.m')` | Fits a simple Wasserstein regression objective and compares true versus estimated parameters. |
-| `run('examples/riemannian_design/run_riemannian_sphere_design.m')` | Computes a D-optimal design on the sphere and prints support points in Cartesian coordinates. |
-| `run('examples/tsp/run_tsp.m')` | Solves a small travelling salesman instance and prints the final route length and tour. |
-| `run('examples/high_dim_d_optimal/run_glm_fisher.m')` | Runs a heavier high-dimensional D-optimal design example adapted from the reference repository. |
-| `run('examples/bayesian_hiv/run_hiv_demo.m')` | Runs a reduced Bayesian HIV design example with deliberately small Monte Carlo settings for package checking. |
-| `run('examples/fractional_polynomial/run_fractional.m')` | Contains reference fractional polynomial design code from the source repository for separate exploratory use. |
+The package is distributed under the MIT License.
 
-Most scripts print numerical summaries directly to the MATLAB command window. The fast starter scripts are intentionally lightweight, while the heavier examples show broader application coverage and reference workflows.
+## Reference Source
 
-## API Map
-
-### Core Functions
-
-| Symbol | Role |
-| --- | --- |
-| `csoma_setup` | Root-level setup helper that adds the main toolbox folders to the MATLAB path. |
-| `csoma` | Main optimizer. Returns the best objective value, best parameter vector, and optionally the iteration history. |
-| `csoma_addpaths` | Convenience helper to add `src/` and the example tree to the MATLAB path. |
-
-### `csoma` Inputs
-
-| Argument | Meaning |
-| --- | --- |
-| `obj_fun` | Objective function handle taking one row vector and returning one scalar. |
-| `lb`, `ub` | Lower and upper box bounds with equal length. |
-| `swarmsize` | Number of swarm particles; must be at least 2. |
-| `phi` | Swarm-center attraction parameter used in loser updates. |
-| `maxiter` | Number of optimization iterations. |
-| `opts.Display` | When `true`, prints per-iteration progress. |
-| `opts.Seed` | Optional numeric seed passed to `rng` for reproducibility. |
-
-### `csoma` Outputs
-
-| Output | Meaning |
-| --- | --- |
-| `minf` | Best objective value found. |
-| `minx` | Best feasible solution vector found. |
-| `history` | Best-so-far objective value at iteration 0 through `maxiter`. |
-
-## Repository Layout
-
-```text
-CSOMA/
-|-- assets/
-|   |-- figure1.png                 # Sensitivity function figure
-|   `-- figure2.png                 # Copula dependence structure figure
-|-- docs/
-|   |-- manuscript_code_fragments/   # Code fragments aligned with the manuscript draft
-|   |-- MATLAB_FILE_EXCHANGE_SUBMISSION.md
-|   `-- original_github_README.md
-|-- examples/
-|   |-- basic/                       # Small smoke test
-|   |-- bayesian_hiv/               # Reduced Bayesian design example
-|   |-- copula_design/              # Copula design and pseudo-likelihood estimation
-|   |-- fractional_polynomial/      # Reference design code from source repository
-|   |-- high_dim_d_optimal/         # Higher-cost D-optimal design example
-|   |-- logistic_design/            # Two-factor logistic design
-|   |-- riemannian_design/          # Design on the sphere
-|   |-- tsp/                        # Travelling salesman example
-|   `-- wasserstein_regression/     # Distributional regression example
-|-- replication/
-|   `-- run_all.m                   # Fast package verification script
-|-- src/
-|   |-- csoma.m                     # Core optimizer
-|   `-- csoma_addpaths.m            # MATLAB path helper
-|-- csoma_setup.m                   # Root-level MATLAB setup entry point
-|-- CITATION.cff
-|-- LICENSE
-|-- MANIFEST.md
-`-- README.md
-```
-
-## Background
-
-This repository packages the CSO-MA optimizer as a reusable MATLAB tool with application-driven examples. It combines a compact optimization interface with end-to-end scripts so users can both call `csoma` directly and study complete problem-specific workflows.
-
-In that sense:
-
-- the optimizer design is grounded in the CSO-MA algorithmic framework;
-- `src/csoma.m` supplies the reusable optimizer implementation;
-- `replication/run_all.m` supplies a fast package entry point;
-- the example directories supply domain-specific objective functions and runnable demonstrations.
-
-The local package was prepared using the public reference repository [`ElvisCuiHan/CSOMA`](https://github.com/ElvisCuiHan/CSOMA), with the source snapshot noted in the existing project documentation.
-
-## Requirements
-
-- Core optimizer: base MATLAB only.
-- Some advanced examples: Statistics and Machine Learning Toolbox.
-- No external package manager or compiled dependency is required for the core workflow.
-
-## Notes
-
-- The basic and replication scripts are the best starting point for a quick correctness check.
-- The high-dimensional, Bayesian HIV, and fractional polynomial examples are more computationally demanding or more directly inherited from the reference repository.
-- The package is distributed under the MIT License.
-- `MANIFEST.md` lists the packaged project contents.
+The code package is maintained in the public repository
+`https://github.com/hahahafafa/CSOMA`. A public MATLAB File Exchange entry is
+available at `https://www.mathworks.com/matlabcentral/fileexchange/183862-csoma`.

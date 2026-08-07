@@ -1,14 +1,23 @@
-function csoma_setup()
-%CSOMA_SETUP Add CSOMA toolbox folders to the MATLAB path.
+function root = csoma_setup()
+%CSOMA_SETUP Add CSOMA package folders to the MATLAB path.
 %
-%   Run this once after downloading or cloning the repository:
-%       csoma_setup
+%   ROOT = CSOMA_SETUP() adds the package root, src, examples, and tests
+%   folders to the MATLAB path. ROOT is the absolute path to this package.
 
     root = fileparts(mfilename('fullpath'));
 
+    addpath(root);
     addpath(fullfile(root, 'src'));
-    addpath(genpath(fullfile(root, 'examples')));
-    addpath(fullfile(root, 'replication'));
 
-    fprintf('CSOMA toolbox paths added successfully.\n');
+    examples_dir = fullfile(root, 'examples');
+    if exist(examples_dir, 'dir')
+        addpath(genpath(examples_dir));
+    end
+
+    tests_dir = fullfile(root, 'tests');
+    if exist(tests_dir, 'dir')
+        addpath(tests_dir);
+    end
+
+    fprintf('CSOMA paths added from: %s\n', root);
 end
