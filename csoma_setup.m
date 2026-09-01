@@ -1,8 +1,9 @@
 function root = csoma_setup()
 %CSOMA_SETUP Add CSOMA package folders to the MATLAB path.
 %
-%   ROOT = CSOMA_SETUP() adds the package root, src, examples, and tests
-%   folders to the MATLAB path. ROOT is the absolute path to this package.
+%   ROOT = CSOMA_SETUP() adds the package root, src, examples, tests, and
+%   replication folders to the MATLAB path. ROOT is the absolute path to
+%   this package.
 
     root = fileparts(mfilename('fullpath'));
 
@@ -17,6 +18,11 @@ function root = csoma_setup()
     tests_dir = fullfile(root, 'tests');
     if exist(tests_dir, 'dir')
         addpath(tests_dir);
+    end
+
+    replication_dir = fullfile(root, 'replication');
+    if exist(replication_dir, 'dir')
+        addpath(replication_dir);
     end
 
     fprintf('CSOMA paths added from: %s\n', root);
