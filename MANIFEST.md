@@ -51,6 +51,7 @@ paper supplement.
 ## Replication
 
 - `replication/run_all.m`: reviewer-facing fast replication entry point.
+- `replication/verify_round2.m`: logged release-verification wrapper.
 
 ## Tests
 

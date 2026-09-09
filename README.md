@@ -26,6 +26,8 @@ optimizer with mutated agents (CSO-MA).
 - `examples/fractional_polynomial`: fractional polynomial design code from the
   reference repository.
 - `replication/run_all.m`: fast replication entry point for reviewers.
+- `replication/verify_round2.m`: one-command release verifier that records the
+  MATLAB/OS environment, Git state, timings, and both automated test suites.
 - `docs/original_github_README.md`: README from the reference GitHub repository.
 - `docs/manuscript_code_fragments`: code fragments extracted from the manuscript
   draft.
@@ -62,6 +64,18 @@ opts = struct('Seed', 2026, 'Display', false);
 `csoma` minimizes a scalar objective function over box constraints. The objective
 function should accept one row vector and return one scalar value.
 
+### Parameter Selection
+
+The values of `swarmsize`, `phi`, and `maxiter` used in the bundled examples
+are problem-specific, illustrative settings; they are not universal defaults
+or generally optimal recommendations. `swarmsize` controls how many candidate
+solutions are explored per iteration, `maxiter` sets the optimization budget,
+and `phi` controls the pull toward the current swarm center. For a new problem,
+users should increase the swarm size or iteration budget when solutions or
+problem-specific diagnostics are unstable across seeds. The appropriate value
+of `phi` is also problem dependent and should be checked together with variable
+scaling, objective stability, and the available computational budget.
+
 ## When To Use CSOMA
 
 CSOMA is a good fit when the objective function is a black box, gradients are
@@ -80,6 +94,11 @@ The core optimizer uses base MATLAB functions only. It is written as ordinary
 MATLAB `.m` files and does not require compiled extensions, external data files,
 or a parallel computing setup. The package is intended for current supported
 MATLAB releases. GNU Octave compatibility has not been verified.
+
+<!-- ROUND-2 RELEASE GATE: Before tagging v0.1.4, replace this comment with a
+verified environment paragraph giving the exact MATLAB release, operating
+system and version, commands run, and pass result. Do not claim untested
+platforms as verified. -->
 
 Objectives are called with one row vector at a time. Bounds must be finite row
 vectors of equal length, and the objective should return a finite scalar for
@@ -106,16 +125,53 @@ needed. Running the same package version with the same seed should reproduce the
 same optimizer trajectory within the same MATLAB random-number implementation;
 small numerical differences can still occur across MATLAB releases or platforms.
 
-For reviewer runs, start with:
+For a complete release or reviewer verification from a clean Git worktree,
+start with:
 
 ```matlab
 csoma_setup
-run(fullfile('tests', 'run_tests.m'))
-run(fullfile('replication', 'run_all.m'))
+log_file = verify_round2()
 ```
 
-Record the MATLAB release, operating system, toolbox availability, and any
-changed seeds when reporting reproducibility results.
+The verifier records the full MATLAB version, release, operating-system
+details, installed MATLAB products, exact Git commit, clean-worktree status,
+and elapsed time for each suite. It writes a timestamped diary to the system
+temporary directory, prints the path as `ROUND2_LOG_FILE`, and runs
+`tests/run_tests.m` followed by `replication/run_all.m`. The direct commands
+remain useful when diagnosing a failed phase.
+
+### Numerical Acceptance Criteria
+
+The release verification is successful only when the log contains
+`CSOMA smoke tests passed.`,
+`All fast replication acceptance checks passed.`, and
+`ROUND2_RELEASE_VERIFICATION=PASS` without an assertion failure.
+The checks distinguish deterministic repeatability from cross-platform
+numerical agreement:
+
+- Repeated core-optimizer calls with the same package, MATLAB release,
+  numerical environment, and seed must be exactly equal, as checked by
+  `tests/run_tests.m`.
+- Across MATLAB releases or operating systems, exact equality is not required.
+  Each fast workflow must instead satisfy the explicit criteria below.
+
+| Workflow | Acceptance criterion |
+| --- | --- |
+| Basic optimizer | Finite bounded result; best-so-far history does not increase beyond `1e-10`. |
+| Logistic D-optimal design | Finite non-penalty criterion; support points in `[-1, 1]^2`; nonnegative weights summing to one within `1e-10`; maximum centered sensitivity on the documented `201 x 201` grid no greater than `0.3`. |
+| Gaussian copula design | Finite non-penalty criterion; support points in `[-1, 1]`; nonnegative weights summing to one within `1e-10`. |
+| Gaussian copula MLE | Finite objective and correlation in `(-1, 1)`; absolute error from the seeded true correlation `0.55` no greater than `0.15`. |
+| Wasserstein regression | Finite output; loss no greater than `0.02`; maximum absolute coefficient error no greater than `0.35`. |
+| Riemannian sphere design | Finite non-penalty criterion; unit-norm support points and nonnegative weights summing to one within `1e-10`. |
+| Traveling-salesman example | Finite valid permutation of all ten cities; independently recomputed closed-tour length agrees with the reported value within the scaled `1e-10` tolerance. |
+
+These thresholds are release-verification criteria for the seeded, lightweight
+examples. They are not claims that a stochastic optimizer must return the same
+solution on every unseeded run, and they are not substitutes for
+problem-specific optimality diagnostics in new applications. In particular,
+the `0.3` logistic bound is a smoke-level guard for the reduced-iteration fast
+workflow; the manuscript separately reports the much stronger centered-
+sensitivity diagnostic for the publication-quality design shown in Figure 1.
 
 ## Benchmarks
 
@@ -123,7 +179,9 @@ changed seeds when reporting reproducibility results.
 standard laptop. `replication/run_all.m` is the reviewer-facing benchmark suite;
 it intentionally uses reduced swarm sizes and iteration counts compared with
 large simulation studies so that package functionality can be checked without a
-long Monte Carlo run.
+long Monte Carlo run. `replication/verify_round2.m` is the release-facing logged
+wrapper that invokes both automated suites. The replication script evaluates
+the criteria above and stops with a named assertion if a workflow fails.
 
 The Bayesian HIV, high-dimensional D-optimal, and fractional-polynomial examples
 are heavier demonstration scripts. Run them separately when full example
